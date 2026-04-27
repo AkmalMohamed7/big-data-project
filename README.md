@@ -10,7 +10,7 @@ A Big Data Search Engine built with Hadoop MapReduce and Flask.
 ## How to Run
 
 ### Step 1 — Collect Data
-python3 crawler.py
+python3 scraper.py
 
 ### Step 2 — Upload to HDFS
 hdfs dfs -mkdir -p /search_engine/pages
