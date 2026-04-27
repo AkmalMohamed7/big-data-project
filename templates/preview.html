@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(180deg, #14141b 0%, #0d0d12 100%); color: #e7e9f0; }
+        .topbar { background: rgba(20, 22, 33, 0.95); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(10px); }
+        /* .back-btn { background: #7c8cff; color: white; border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s ease; } */
+        /* .back-btn:hover { background: #6a75f1; transform: translateX(-2px); } */
+        .page-url { font-size: 13px; color: #9a9fb4; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .visit-btn { color: #7c8cff; border: 1px solid rgba(124, 140, 255, 0.3); border-radius: 999px; padding: 8px 16px; font-size: 13px; text-decoration: none; font-weight: 600; transition: all 0.2s ease; }
+        .visit-btn:hover { background: rgba(124, 140, 255, 0.1); border-color: rgba(124, 140, 255, 0.6); }
+        .content { max-width: 800px; margin: 24px auto; background: rgba(26, 29, 41, 0.95); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 32px; box-shadow: 0 18px 40px rgba(0,0,0,0.12); }
+        .match-info { font-size: 13px; color: #9a9fb4; margin-bottom: 24px; }
+        .match-info span { color: #7c8cff; font-weight: 600; }
+        .page-text { font-size: 14px; color: #c7cbd9; line-height: 1.9; white-space: pre-wrap; }
+        mark { background: rgba(124,140,255,0.14); color: #dcdfff; border-radius: 3px; padding: 0 3px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <!-- <a class="back-btn" href="javascript:history.back()">← Back</a> -->
+        <div class="page-url">{{ url }}</div>
+        <a class="visit-btn" href="{{ url }}" target="_blank">Visit Site</a>
+    </div>
+    <div class="content">
+        <div class="match-info">Highlighting: <span>{{ query }}</span></div>
+        <div class="page-text" id="pageText">Loading...</div>
+    </div>
+    <script>
+        const url = `{{ url }}`;
+        const keywords = "{{ query }}".split(" ");
+
+        fetch(`/get_content?url=${encodeURIComponent(url)}`)
+            .then(res => res.json())
+            .then(data => {
+                let text = data.text || "Could not load content.";
+                keywords.forEach(kw => {
+                    if (kw.length > 1) {
+                        const regex = new RegExp(`(${kw})`, "gi");
+                        text = text.replace(regex, "<mark>$1</mark>");
+                    }
+                });
+                document.getElementById("pageText").innerHTML = text;
+                const firstMark = document.querySelector("mark");
+                if (firstMark) firstMark.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
+    </script>
+</body>
+</html>

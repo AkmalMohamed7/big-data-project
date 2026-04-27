@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ query }} — Mini Google</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(180deg, #14141b 0%, #0d0d12 100%); color: #e7e9f0; }
+        .topbar { background: rgba(20, 22, 33, 0.95); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px; display: flex; align-items: center; gap: 18px; position: sticky; top: 0; z-index: 2; backdrop-filter: blur(10px); }
+        .topbar h1 { font-size: 22px; color: #f4f6ff; white-space: nowrap; font-weight: 700; }
+        .topbar h1 span { color: #7c8cff; }
+        .search-bar { display: flex; align-items: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 999px; padding: 10px 16px; flex: 1; max-width: 680px; }
+        .search-bar input { flex: 1; border: none; outline: none; font-size: 14px; color: #edf0ff; background: transparent; }
+        .search-bar input::placeholder { color: #8c91a8; }
+        .search-bar button { background: #7c8cff; color: white; border: none; border-radius: 999px; padding: 8px 18px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s ease; }
+        .search-bar button:hover { background: #6a75f1; }
+        /* .mic-btn { background: none; border: none; cursor: pointer; font-size: 16px; margin-right: 8px; color: #9fa4ba; transition: all 0.2s ease; }
+        .mic-btn:hover { color: #d9ddff; }
+        .mic-btn.listening { color: #ff6b6b; animation: pulse 1s infinite; } */
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .content { max-width: 760px; margin: 26px auto; padding: 0 20px 40px; }
+        .results-count { font-size: 13px; color: #9a9fb4; margin-bottom: 18px; }
+        .result-card { background: rgba(26, 29, 41, 0.95); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 18px; margin-bottom: 14px; box-shadow: 0 18px 40px rgba(0,0,0,0.12); transition: all 0.2s ease; }
+        .result-card:hover { border-color: rgba(124, 140, 255, 0.2); }
+        .result-url { font-size: 12px; color: #8f94aa; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .result-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+        .result-title a { color: #d9ddff; text-decoration: none; }
+        .result-title a:hover { color: #7c8cff; text-decoration: underline; }
+        .result-snippet { font-size: 14px; color: #c7cbd9; line-height: 1.8; margin-bottom: 8px; }
+        .result-snippet mark { background: rgba(124,140,255,0.14); color: #dcdfff; border-radius: 3px; padding: 0 3px; font-weight: 600; }
+        .result-count { font-size: 12px; color: #9a9fb4; }
+        .result-count span { color: #7c8cff; font-weight: 600; }
+        .no-results { text-align: center; color: #9a9fb4; margin-top: 80px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1><a href="/" style="text-decoration:none;color:inherit;">Mini<span>Google</span></a></h1>
+        <form action="/search" method="get" style="flex:1;display:flex;">
+            <div class="search-bar">
+                <input type="text" name="q" id="searchInput" value="{{ query }}">
+                <!-- <button type="button" class="mic-btn" id="micBtn">🎤</button> -->
+                <button type="submit">Search</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="content">
+        {% if results %}
+            <div class="results-count">Found <strong>{{ results|length }}</strong> results for "<strong>{{ query }}</strong>"</div>
+            {% for result in results %}
+            <div class="result-card">
+                <div class="result-url">{{ result.url }}</div>
+                <div class="result-title">
+                    <a href="/open?url={{ result.url }}&q={{ query }}" target="_blank">
+                        {{ result.url.split('/')[-1] or result.url }}
+                    </a>
+                </div>
+                <div class="result-snippet">{{ result.snippet }}</div>
+                <div class="result-count">Found <span>{{ result.count }}</span> times in this page</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-results">No results found for "<strong>{{ query }}</strong>"</div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Highlight في الـ Snippets
+        const keywords = "{{ query }}".split(" ");
+        document.querySelectorAll(".result-snippet").forEach(el => {
+            let html = el.innerHTML;
+            keywords.forEach(kw => {
+                if (kw.length > 1) {
+                    const regex = new RegExp(`(${kw})`, "gi");
+                    html = html.replace(regex, "<mark>$1</mark>");
+                }
+            });
+            el.innerHTML = html;
+        });
+
+        /*
+        // Voice Search
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            console.log("SpeechRecognition supported");
+            const recognition = new SpeechRecognition();
+            recognition.lang = "en-US";
+            const micBtn = document.getElementById("micBtn");
+            const searchInput = document.getElementById("searchInput");
+            micBtn.addEventListener("click", () => {
+                console.log("Mic button clicked");
+                try {
+                    recognition.start();
+                    micBtn.classList.add("listening");
+                    micBtn.textContent = "🎤 Listening";
+                } catch (error) {
+                    console.error("Error starting recognition:", error);
+                }
+            });
+            recognition.onresult = (e) => {
+                console.log("Recognition result:", e.results[0][0].transcript);
+                searchInput.value = e.results[0][0].transcript;
+                micBtn.classList.remove("listening");
+                micBtn.textContent = "🎤";
+                searchInput.closest("form").submit();
+            };
+            recognition.onend = () => {
+                console.log("Recognition ended");
+                micBtn.classList.remove("listening");
+                micBtn.textContent = "🎤";
+            };
+            recognition.onerror = (event) => {
+                console.error("Recognition error:", event.error);
+                micBtn.classList.remove("listening");
+                micBtn.textContent = "🎤";
+            };
+        } else {
+            console.log("SpeechRecognition not supported");
+            document.getElementById("micBtn").style.display = "none";
+        }
+        */
+    </script>
+</body>
+</html>
