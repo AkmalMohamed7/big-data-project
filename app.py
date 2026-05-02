@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, render_template
+from urllib.parse import unquote
 import json
 import os
 
 app = Flask(__name__)
 
 
-# ========== Load Index & Mapping ==========
 def load_index(filepath="index.txt"):
     index = {}
     with open(filepath, "r", encoding="utf-8") as f:
@@ -27,11 +27,9 @@ index = load_index()
 mapping = load_mapping()
 print(f"Index loaded — {len(index)} words")
 
-# ========== Cache ==========
 cache = {}
 
 
-# ========== Helper Functions ==========
 def get_snippet(url, keywords):
     filename = None
     for fname, furl in mapping.items():
@@ -80,7 +78,6 @@ def count_occurrences(url, keywords):
         return 0
 
 
-# ========== Routes ==========
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -92,7 +89,6 @@ def search():
     if not query:
         return render_template("results.html", results=[], query="")
 
-    # Check cache
     if query in cache:
         print(f"Cache hit: {query}")
         return render_template("results.html", results=cache[query], query=query)
@@ -109,12 +105,13 @@ def search():
     for url in urls[:20]:
         snippet = get_snippet(url, keywords)
         count = count_occurrences(url, keywords)
-        results.append({"url": url, "snippet": snippet, "count": count})
+        display_url = unquote(url)
+        results.append(
+            {"url": url, "display_url": display_url, "snippet": snippet, "count": count}
+        )
 
-    # Sort by count
     results.sort(key=lambda x: x["count"], reverse=True)
-
-    # Save to cache
+    
     cache[query] = results
 
     return render_template("results.html", results=results, query=query)
@@ -124,15 +121,25 @@ def search():
 def open_url():
     url = request.args.get("url", "")
     query = request.args.get("q", "")
-    return render_template("preview.html", url=url, query=query)
+    display_url = unquote(url)
+    return render_template(
+        "preview.html", url=url, display_url=display_url, query=query
+    )
 
 
 @app.route("/get_content")
 def get_content():
     url = request.args.get("url", "")
+    decoded_url = unquote(url)
     filename = None
     for fname, furl in mapping.items():
-        if furl == url:
+        
+        if (
+            furl == url
+            or furl == decoded_url
+            or unquote(furl) == decoded_url
+            or unquote(furl) == url
+        ):
             filename = fname
             break
     if not filename:
@@ -146,6 +153,6 @@ def get_content():
         return jsonify({"text": "Could not load content."})
 
 
-# ========== Run ==========
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
