@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <title>MiniGoogle</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,9 +15,10 @@
         .search-bar { display: flex; align-items: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 12px 18px; backdrop-filter: blur(14px); }
         .search-bar input { flex: 1; border: none; outline: none; font-size: 16px; color: #f5f7ff; background: transparent; }
         .search-bar input::placeholder { color: #8f95ae; }
-        /* .mic-btn { background: none; border: none; cursor: pointer; font-size: 18px; margin-right: 10px; color: #9fa4ba; transition: all 0.2s ease; }
+        .mic-btn { background: none; border: none; cursor: pointer; font-size: 18px; margin-right: 10px; color: #9fa4ba; transition: all 0.2s ease; }
         .mic-btn:hover { color: #d9ddff; }
-        .mic-btn.listening { color: #ff6b6b; animation: pulse 1s infinite; } */
+        .mic-btn.listening { color: #ff6b6b; animation: pulse 1s infinite; }
+        .voice-status { display: block; margin-top: 10px; font-size: 14px; color: #a3a8bf; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
         .search-btn { background: #7c8cff; color: white; border: none; border-radius: 999px; padding: 10px 22px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s ease; }
         .search-btn:hover { background: #6876f0; transform: translateY(-1px); }
@@ -29,57 +31,69 @@
         <form action="/search" method="get">
             <div class="search-bar">
                 <input type="text" name="q" id="searchInput" placeholder="Search for anything..." autofocus>
-                <!-- <button type="button" class="mic-btn" id="micBtn" title="Voice Search">🎤</button> -->
+                <button type="button" class="mic-btn" id="micBtn" title="Voice Search"><i class="fa-solid fa-microphone"></i></button>
                 <button type="submit" class="search-btn">Search</button>
             </div>
+            <div class="voice-status" id="voiceStatus"></div>
         </form>
     </div>
     <script>
-        /*
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const micBtn = document.getElementById("micBtn");
+        const voiceStatus = document.getElementById("voiceStatus");
         const searchInput = document.getElementById("searchInput");
 
+        const updateStatus = (message) => {
+            voiceStatus.textContent = message;
+        };
+
         if (SpeechRecognition) {
-            console.log("SpeechRecognition supported");
             const recognition = new SpeechRecognition();
             recognition.lang = "en-US";
+            recognition.continuous = false;
+            recognition.interimResults = true;
 
             micBtn.addEventListener("click", () => {
-                console.log("Mic button clicked");
                 try {
                     recognition.start();
                     micBtn.classList.add("listening");
-                    micBtn.textContent = "🎤 Listening";
+                    micBtn.innerHTML = '<i class="fa-solid fa-microphone-lines"></i>';
+                    updateStatus("Listening... Speak clearly into your microphone.");
                 } catch (error) {
-                    console.error("Error starting recognition:", error);
+                    console.error("Speech recognition start error:", error);
+                    updateStatus("Unable to start voice search. Please refresh and try again.");
                 }
             });
 
-            recognition.onresult = (e) => {
-                console.log("Recognition result:", e.results[0][0].transcript);
-                searchInput.value = e.results[0][0].transcript;
-                micBtn.classList.remove("listening");
-                micBtn.textContent = "🎤";
-                searchInput.closest("form").submit();
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join(" ");
+                searchInput.value = transcript;
+                if (event.results[0].isFinal) {
+                    updateStatus("Heard: " + transcript);
+                    searchInput.closest("form").submit();
+                }
             };
 
             recognition.onend = () => {
-                console.log("Recognition ended");
                 micBtn.classList.remove("listening");
-                micBtn.textContent = "🎤";
+                micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                if (!searchInput.value) {
+                    updateStatus("Voice search ended. Click the microphone again to retry.");
+                }
             };
 
             recognition.onerror = (event) => {
-                console.error("Recognition error:", event.error);
+                console.error("Speech recognition error:", event.error);
                 micBtn.classList.remove("listening");
-                micBtn.textContent = "🎤";
+                micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                updateStatus("Voice recognition error: " + event.error + ". Please try again.");
             };
         } else {
-            console.log("SpeechRecognition not supported");
             micBtn.style.display = "none";
+            updateStatus("Voice search is not supported by this browser.");
         }
-        */
     </script>
 </body>
 </html>
