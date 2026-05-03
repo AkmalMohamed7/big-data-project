@@ -1,4 +1,4 @@
-# HadoopSearch 🔍
+# MiniGoogle 🔍
 A Big Data Search Engine built with Hadoop MapReduce and Flask.
 
 ## Requirements
